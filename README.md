@@ -1,6 +1,6 @@
 # fiap-tech-challenge-execution-database-infrastructure
 
-Infraestrutura do banco de dados do **Execution Service** (fila de execução dos serviços da oficina) do Tech Challenge — FIAP Pós-Tech, Arquitetura de Software, turma 15SOAT, **Fase 4** (microsserviços + Saga). Provisiona, via Terraform, a tabela **Amazon DynamoDB** do serviço. Diferente do OS, do Billing e do Inventory, o Execution não usa banco relacional.
+Infraestrutura do banco de dados do **Execution Service** (fila de execução dos serviços da oficina) do Tech Challenge — FIAP Pós-Tech, Arquitetura de Software, turma 15SOAT. Provisiona, via Terraform, a tabela **Amazon DynamoDB** do serviço. Diferente do OS, do Billing e do Inventory, o Execution não usa banco relacional.
 
 | Repositório | Papel |
 |---|---|
@@ -31,7 +31,7 @@ O Execution guarda a **fila de trabalho dos mecânicos**: uma ordem por OS, com 
 - **O nome da tabela é o que o serviço lê** em `DYNAMODB_TABLE`, definido no ConfigMap do serviço com o mesmo valor padrão (`execution-orders`). A variável `table_name` só deve mudar junto com o serviço.
 - **Sem proteção contra exclusão** (`deletion_protection_enabled = false`): o `destroy` precisa conseguir remover a tabela no fim de cada sessão do Lab. Os dados são de demonstração.
 - **Sem secret e sem rede:** a tabela não tem senha e não fica dentro da VPC. Por isso este repositório **não** envia nada para o repositório do serviço e não depende do cluster para ser aplicado.
-- **Acesso dos pods pelo role do nó:** o serviço usa as credenciais do role IAM do nó (`LabEksNodeRole`), que o Learner Lab não deixa alterar. Se esse role não permitir `dynamodb:GetItem`, `UpdateItem` e `Scan` nessa tabela, o plano alternativo é fornecer as credenciais da sessão aos pods por um Secret. Isso é verificado na fase de validação no Lab.
+- **Acesso dos pods pelo role do nó:** o serviço usa as credenciais do role IAM do nó (`LabEksNodeRole`), que o Learner Lab não deixa alterar. Se esse role não permitir `dynamodb:GetItem`, `UpdateItem` e `Scan` nessa tabela, o plano alternativo é fornecer as credenciais da sessão aos pods por um Secret. Isso é verificado na validação no Lab.
 - **A tabela é criada por este repositório, não pelo serviço.** O serviço só a cria sozinho quando `DYNAMODB_AUTO_CREATE_TABLE=true` (ambiente local e testes); na AWS essa variável fica desligada.
 
 ## Tecnologias
@@ -84,7 +84,7 @@ Todas têm valor padrão (ver [`variables.tf`](variables.tf)):
 - `terraform fmt`, `init`, `validate` e `actionlint` passam (como no `terraform-validate.yml`).
 - A tabela foi criada por este Terraform num LocalStack **antes** de qualquer serviço subir, e então o **sistema inteiro rodou com o serviço real** (`os-service/e2e/run-e2e.sh`): fluxo feliz, pagamento recusado e estoque insuficiente, com as filas de erro vazias. O serviço não recriou a tabela (nenhuma linha de criação no log), a usou como está: chave `serviceOrderId` (HASH), cobrança `PAY_PER_REQUEST`, e a ordem do fluxo feliz ficou gravada nela.
 
-**Não validado:** o `apply` contra a AWS real e as permissões dos pods sobre a tabela, que dependem das credenciais e do role do Lab. Isso é verificado na fase de validação no Lab.
+**Não validado:** o `apply` contra a AWS real e as permissões dos pods sobre a tabela, que dependem das credenciais e do role do Lab. Isso é verificado na validação no Lab.
 
 ## APIs
 
